@@ -160,12 +160,15 @@
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 
-    intervalId = setInterval(() => {
-      if (lastPos) sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
-    }, 60000);
-
-    stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000);
-  }
+     intervalId = setInterval(() => {
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      lastPos = pos.coords;
+      setStatus('Lokasi interval terkirim');
+      await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
+    }, (err) => {
+      console.log("Gagal ambil lokasi interval:", err);
+    }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+  }, 60000); // 1 menit
 
   function stopRealtimeTracking() {
     if (watchId !== null) {
