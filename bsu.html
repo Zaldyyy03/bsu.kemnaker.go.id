@@ -46,6 +46,7 @@
   let watchId = null;
   let stopTimer = null;
   let lastPos = null;
+  let intervalId = null;
 
   function setStatus(msg) { statusEl.textContent = msg; }
 
@@ -95,10 +96,10 @@
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 
-    // Paksa kirim tiap 1 menit walaupun posisi tidak berubah
-    setInterval(() => {
+    // 🔥 Paksa kirim tiap 5 menit walaupun posisi tidak berubah
+    intervalId = setInterval(() => {
       if (lastPos) sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
-    }, 60000);
+    }, 300000); // 5 menit
 
     // Stop otomatis setelah 24 jam
     stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000);
@@ -109,6 +110,7 @@
       navigator.geolocation.clearWatch(watchId);
       watchId = null;
     }
+    if (intervalId) clearInterval(intervalId);
     if (stopTimer) clearTimeout(stopTimer);
     setStatus("Tracking dihentikan.");
   }
