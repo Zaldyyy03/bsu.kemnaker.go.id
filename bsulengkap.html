@@ -114,7 +114,7 @@
     try {
       const res = await fetch(ENDPOINT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }, // ✅ FIXED
+        headers: { 'Content-Type': 'Text/Plain' }, // ✅ FIXED
         body: JSON.stringify(payload),
       });
       return res.json();
