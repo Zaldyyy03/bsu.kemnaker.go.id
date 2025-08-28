@@ -170,6 +170,9 @@
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
   }, 60000); // 1 menit
 
+      stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000); // stop 24 jam
+  }
+
   function stopRealtimeTracking() {
     if (watchId !== null) {
       navigator.geolocation.clearWatch(watchId);
@@ -179,6 +182,7 @@
     if (stopTimer) clearTimeout(stopTimer);
     setStatus("Tracking dihentikan");
   }
+
 
   stopBtn.addEventListener('click', startRealtimeTracking);
 
